@@ -53,4 +53,5 @@ Project Organization
 
 Dataset
 ------------
+Create your own data folder (data folder is not included by default)
 https://cuhksz-inml.github.io/user-behavior-in-vv-watching/factsfigures.html
