@@ -3,6 +3,22 @@
 *** ON GOING PROJECT, CODEBASE WILL BE UPDATE LATER SINCE WE CONDUCT OUR TRAINING ON GOOGLE COLAB
 This project aims to explore, adapt, and develop a predictive system for anticipating viewers' gaze directions within immersive 360 degree images and videos by analyzing the past view direction.
 
+Dataset
+------------
+Create your own data folder (data folder is not included by default) 
+
+Create a data structure for the data folder as shown
+    ├── data
+    │   ├── external       <- Data from third party sources.
+    │   ├── interim        <- Intermediate data that has been transformed.
+    │   ├── processed      <- The final, canonical data sets for modeling.
+    │   └── raw            <- The original, immutable data dump
+
+    
+Link to the dataset: https://cuhksz-inml.github.io/user-behavior-in-vv-watching/
+Google drive link to directly download the dataset: https://drive.google.com/drive/folders/10IneAJ6uMoI_BI93tuKj5_Oxj9qbkM29
+Please download the dataset and put it into the /data/raw folder. The dataset contains 100 text files, please double check.
+
 Project Organization
 ------------
 
@@ -51,7 +67,4 @@ Project Organization
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
 
-Dataset
-------------
-Create your own data folder (data folder is not included by default)
-https://cuhksz-inml.github.io/user-behavior-in-vv-watching/factsfigures.html
+
