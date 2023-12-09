@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 import os
 import pandas as pd
 
-class GazeDataset(Dataset):
+class GazeDataSet(Dataset):
     def __init__(self, data_dir):
         self.data_dir = data_dir
         self.file_list = [file for file in os.listdir(data_dir) if file.endswith('.csv')]
@@ -38,7 +38,7 @@ class GazeDataset(Dataset):
 
 # Example usage:
 data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataset(data_directory)
+custom_dataset = GazeDataSet(data_directory)
 
 # Accessing a specific sample
 sample_idx = 0
