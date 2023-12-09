@@ -25,7 +25,8 @@ class GazeDataset(Dataset):
         # data = data.fillna(data.mean())
 
         # Extract features and labels (assuming 'GazeDirection' is the column to predict)
-        features = data.iloc[:, 2:-3].values  # Exclude 'Timer' and gaze direction columns
+        features = data.iloc[:, 1:21].values  # Exclude 'Timer' and gaze direction columns
+        print("Column Names:", features)
         gaze_direction = data[['LEyeRX', 'LEyeRY', 'LEyeRZ', 'REyeRX', 'REyeRY', 'REyeRZ']].values
         print(features)
         print(gaze_direction)
@@ -45,7 +46,7 @@ sample_data, sample_gaze_direction = custom_dataset[sample_idx]
 
 # Print the features and gaze direction for the sample after handling missing values
 print("Features:")
-print(sample_data)
+print(sample_data.shape)
 
 print("\nGaze Direction:")
-print(sample_gaze_direction)
+print(sample_gaze_direction.shape)
