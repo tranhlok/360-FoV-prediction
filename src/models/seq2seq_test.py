@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import os
-# from data.torch_custom_dataset import GazeDataSet
+import sys
+from torch_custom_dataset import GazeDataSet
+# from data.torch_custom_dataset import GazeDataSet # for running in the main dir
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import torch.nn.utils.rnn as rnn_utils
-
-import pandas as pd
 
 def pad_tensor(vec, pad, dim):
     """
@@ -57,42 +57,6 @@ class PadCollate:
 
     def __call__(self, batch):
         return self.pad_collate(batch)
-
-
-
-
-class GazeDataSet(Dataset):
-    def __init__(self, data_dir):
-        self.data_dir = data_dir
-        self.file_list = [file for file in os.listdir(data_dir) if file.endswith('.csv')]
-
-    def __len__(self):
-        return len(self.file_list)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        file_name = self.file_list[idx]
-        file_path = os.path.join(self.data_dir, file_name)
-
-        # Load the data from the text file with the correct delimiter
-        data = pd.read_csv(file_path, delimiter=',')  # Assuming comma-separated values
-        print("Column Names:", data.columns)
-        # Replace NaN values with the mean of each column
-        # data = data.fillna(data.mean())
-
-        # Extract features and labels (assuming 'GazeDirection' is the column to predict)
-        features = data.iloc[:, 1:21].values  # Exclude 'Timer' and gaze direction columns
-        print("Column Names:", features)
-        gaze_direction = data[['LEyeRX', 'LEyeRY', 'LEyeRZ', 'REyeRX', 'REyeRY', 'REyeRZ']].values
-        print(features)
-        print(gaze_direction)
-        # Convert to PyTorch tensors
-        features = torch.tensor(features, dtype=torch.float32)
-        gaze_direction = torch.tensor(gaze_direction, dtype=torch.float32)
-
-        return features, gaze_direction
 
 # Define the Seq2Seq model
 class Seq2SeqModel(nn.Module):
