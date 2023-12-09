@@ -157,33 +157,10 @@ if not target_user_only:
             others_fut_inputs1 = others_lstm1(others_fut_inputs0)
             others_fut_inputs2 = others_lstm2(others_fut_inputs1)
 
-            #lstm+mlp mixing
-            # others_dense = Dense((num_user-1)*num_decoder_tokens,activation='relu')
-            # others_fut_output = others_dense(others_fut_inputs2[0])
-            # others_fut_output = Reshape((max_decoder_seq_length,num_user-1,num_decoder_tokens))(others_fut_output)
-            # mixing = Dense(num_decoder_tokens,activation=None)
     else:
         if mlp_mixing:
             ### 1 layer mixing
-            mixing = Dense(num_decoder_tokens,activation='tanh')
-            ### 3 layer mixing
-            # mixing = Dense(3*num_decoder_tokens,activation='tanh')
-            # mixing1 = Dense(2*num_decoder_tokens,activation='tanh')
-            # mixing2 = Dense(num_decoder_tokens,activation=None)
-            # gating = Dense(num_user*6,activation=None) #gating
-
-            ### softmax gating
-            # mixing = Dense(256,activation='tanh')
-            # mixing1 = Dense(512,activation='tanh')
-            # mixing2 = Dense(256,activation=None)
-            # gating = Dense(num_user,activation='softmax') #softmax gating
-            # modulating = Lambda(lambda x: Concatenatelayer_1([expand_dim_layer_1(multiply([x[0],x[1][:,:,0]])),
-            #                                                 expand_dim_layer_1(multiply([x[0],x[1][:,:,1]])),
-            #                                                 expand_dim_layer_1(multiply([x[0],x[1][:,:,2]])),
-            #                                                 expand_dim_layer_1(multiply([x[0],x[1][:,:,3]])),
-            #                                                 expand_dim_layer_1(multiply([x[0],x[1][:,:,4]])),
-            #                                                 expand_dim_layer_1(multiply([x[0],x[1][:,:,5]]))])) 
-            
+            mixing = Dense(num_decoder_tokens,activation='tanh')            
 
         elif conv_mixing:
             mixing = Conv2D(filters=8, kernel_size=(1,3), strides=(1, 1),padding='same',
@@ -353,36 +330,7 @@ if use_generator:
         mygenerator_val = generator_train2(datadb_test,phase='val')
 
 else:
-    #### create data for tsinghua dataset (train, test) split on users, format5_tsinghua_by_sec_interp
-    # video_data_train = pickle.load(open('./360video/temp/tsinghua_after_bysec_interpolation/tsinghua_train_video_data_over_users.p','rb'),encoding='latin')    
-    # video_data_train = pickle.load(open('./360video/temp/tsinghua_after_bysec_interpolation/tsinghua_train_video_data_over_video.p','rb'),encoding='latin')     
-    # video_data_train = clip_xyz(video_data_train)
-    # datadb = video_data_train.copy()
-    # video_data_test = pickle.load(open('./360video/temp/tsinghua_after_bysec_interpolation/tsinghua_test_video_data_over_video.p','rb'))    
-    # video_data_test = clip_xyz(video_data_test)
-    # datadb = video_data_test.copy()
-    # _video_db_tar, _video_db_future_tar, _video_db_future_input_tar, \
-    # _video_db_oth,_video_db_future_oth,_video_db_future_input_oth = util.get_data(datadb,pick_user=True,num_user=datadb[0]['x'].shape[0])
-
-    ##### create data format 3or4--4
-    # video_data_train = pickle.load(open('./360video/data/shanghai_dataset_xyz_train.p','rb'))    
-    # video_data_train = clip_xyz(video_data_train)
-    # datadb = video_data_train.copy()
-    # video_data_test = pickle.load(open('./360video/data/shanghai_dataset_xyz_test.p','rb'))    
-    # video_data_test = clip_xyz(video_data_test)
-    # datadb = video_data_test.copy()
-    # _video_db_tar, _video_db_future_tar, _video_db_future_input_tar, \
-    # _video_db_oth,_video_db_future_oth,_video_db_future_input_oth = util.get_data(datadb,pick_user=True,num_user=34)
-
-    # #### load cached data
-    # dataformat = 'formtat2'
-    # _video_db_tar = pickle.load(open('./cache/'+dataformat+'/_video_db_tar_exp'+str(experiment)+'.p','rb'))
-    # _video_db_future_tar = pickle.load(open('./cache/'+dataformat+'/_video_db_future_tar_exp'+str(experiment)+'.p','rb'))
-    # _video_db_future_input_tar = pickle.load(open('./cache/'+dataformat+'/_video_db_future_input_tar_exp'+str(experiment)+'.p','rb'))
-    # _video_db_oth = pickle.load(open('./cache/'+dataformat+'/_video_db_oth_exp'+str(experiment)+'.p','rb'))
-    # _video_db_future_oth = pickle.load(open('./cache/'+dataformat+'/_video_db_future_oth_exp'+str(experiment)+'.p','rb'))
-    # _video_db_future_input_oth = pickle.load(open('./cache/'+dataformat+'/_video_db_future_input_oth_exp'+str(experiment)+'.p','rb'))
-    #### load cached data format4 
+  
     dataformat = 'format4' #shanghaitech
     option='stride10_cut_head/'
     dataformat = 'format5_tsinghua_by_sec_interp' #tsinghua
