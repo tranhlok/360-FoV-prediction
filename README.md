@@ -8,6 +8,7 @@ Dataset
 Create your own data folder (data folder is not included by default) 
 
 Create a data structure for the data folder as shown
+
     ├── data
     │   ├── external       <- Data from third party sources.
     │   ├── interim        <- Intermediate data that has been transformed.
