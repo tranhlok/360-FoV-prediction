@@ -10,14 +10,14 @@ Create your own data folder (data folder is not included by default)
 Create a data structure for the data folder as shown
 
     ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
     │   ├── processed      <- The final, canonical data sets for modeling.
     │   └── raw            <- The original, immutable data dump
 
     
 Link to the dataset: https://cuhksz-inml.github.io/user-behavior-in-vv-watching/
+
 Google drive link to directly download the dataset: https://drive.google.com/drive/folders/10IneAJ6uMoI_BI93tuKj5_Oxj9qbkM29
+
 Please download the dataset and put it into the /data/raw folder. The dataset contains 100 text files, please double check.
 
 Project Organization
@@ -27,8 +27,6 @@ Project Organization
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
     ├── README.md          <- The top-level README for developers using this project.
     ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
     │   ├── processed      <- The final, canonical data sets for modeling.
     │   └── raw            <- The original, immutable data dump.
     │
