@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 import os
 import pandas as pd
 
-class CustomDataset(Dataset):
+class GazeDataset(Dataset):
     def __init__(self, data_dir):
         self.data_dir = data_dir
         self.file_list = [file for file in os.listdir(data_dir) if file.endswith('.csv')]
@@ -27,7 +27,8 @@ class CustomDataset(Dataset):
         # Extract features and labels (assuming 'GazeDirection' is the column to predict)
         features = data.iloc[:, 2:-3].values  # Exclude 'Timer' and gaze direction columns
         gaze_direction = data[['LEyeRX', 'LEyeRY', 'LEyeRZ', 'REyeRX', 'REyeRY', 'REyeRZ']].values
-
+        print(features)
+        print(gaze_direction)
         # Convert to PyTorch tensors
         features = torch.tensor(features, dtype=torch.float32)
         gaze_direction = torch.tensor(gaze_direction, dtype=torch.float32)
@@ -36,7 +37,7 @@ class CustomDataset(Dataset):
 
 # Example usage:
 data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = CustomDataset(data_directory)
+custom_dataset = GazeDataset(data_directory)
 
 # Accessing a specific sample
 sample_idx = 0
