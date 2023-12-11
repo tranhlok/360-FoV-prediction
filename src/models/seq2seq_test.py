@@ -9,6 +9,21 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import torch.nn.utils.rnn as rnn_utils
 
+def collate_fn(batch):
+    # batch is a list of (sequence, target, sequence_length) tuples
+    sequences, targets, lengths = zip(*batch)
+
+    # Sort batch by sequence length for pack_padded_sequence
+    sorted_lengths, sorted_indices = torch.sort(torch.tensor(lengths), descending=True)
+    sorted_sequences = [sequences[i] for i in sorted_indices]
+    sorted_targets = [targets[i] for i in sorted_indices]
+
+    # Pack sequences
+    packed_sequences = rnn_utils.pack_sequence(sorted_sequences)
+
+    return packed_sequences, torch.stack(sorted_targets), sorted_lengths
+
+
 def pad_tensor(vec, pad, dim):
     """
     args:
@@ -97,7 +112,7 @@ optimizer = torch.optim.Adam(model.parameters())
 
 # DataLoader for batching
 batch_size = 16  # Adjust based on your needs
-dataloader = DataLoader(custom_dataset, batch_size=batch_size, collate_fn=PadCollate(dim=0), shuffle=True)
+dataloader = DataLoader(custom_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
 
 # Training loop
 num_epochs = 10
