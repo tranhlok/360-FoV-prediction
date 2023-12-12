@@ -57,7 +57,7 @@ class GazeDataSet_OnlyHead(Dataset):
         data = pd.read_csv(file_path, delimiter=',')  # Assuming comma-separated values
 
         # Extract features and labels (assuming 'GazeDirection' is the column to predict)
-        features = data[['HeadX', 'HeadY', 'HeadZ']].values  # Exclude 'Timer' and gaze direction columns
+        features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
         gaze_direction = data[['REyeRX', 'REyeRY', 'REyeRZ']].values
 
         # Convert to PyTorch tensors
