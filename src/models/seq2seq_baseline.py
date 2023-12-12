@@ -1,16 +1,22 @@
-from collate import collate_fn
+'''
+The baseline seq2seq model, make adjustment to the 
+custom dataset in torch_cutom_dataset.py
+collate_fn can be found in collate.py
+'''
 
 import os
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-import pandas as pd
+from torch.utils.data import DataLoader
+from collate import collate_fn
 from sklearn.model_selection import train_test_split
+from torch.optim.lr_scheduler import StepLR
+from torch_custom_dataset import GazeDataSet_OnlyHead
 
 # Define the PyTorch Seq2Seq model
-class Seq2SeqModel(nn.Module):
+class Seq2Seq_Baseline(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(Seq2SeqModel, self).__init__()
+        super(Seq2Seq_Baseline, self).__init__()
         self.encoder = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.decoder_lstm = nn.LSTM(output_size, hidden_size, batch_first=True)
         self.decoder_dense = nn.Linear(hidden_size, output_size)
@@ -26,63 +32,41 @@ class Seq2SeqModel(nn.Module):
 
         return decoder_outputs
 
-# Define the dataset class
-class GazeDataSet(Dataset):
-    def __init__(self, data_dir):
-        self.data_dir = data_dir
-        self.file_list = [file for file in os.listdir(data_dir) if file.endswith('.csv')]
-
-    def __len__(self):
-        return len(self.file_list)
-
-    def __getitem__(self, idx):
-        file_name = self.file_list[idx]
-        file_path = os.path.join(self.data_dir, file_name)
-
-        # Load the data from the text file with the correct delimiter
-        data = pd.read_csv(file_path, delimiter=',')  # Assuming comma-separated values
-
-        # Extract features and labels (assuming 'GazeDirection' is the column to predict)
-        features = data.iloc[:, 1:21].values  # Exclude 'Timer' and gaze direction columns
-        gaze_direction = data[['LEyeRX', 'LEyeRY', 'LEyeRZ', 'REyeRX', 'REyeRY', 'REyeRZ']].values
-
-        # Convert to PyTorch tensors
-        features = torch.tensor(features, dtype=torch.float32)
-        gaze_direction = torch.tensor(gaze_direction, dtype=torch.float32)
-
-        return features, gaze_direction
 
 # Split the dataset into training and validation sets
 data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataSet(data_directory)
+custom_dataset = GazeDataSet_OnlyHead(data_directory)
+print("Should be 95", len(custom_dataset))
 
 train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.2, random_state=42)
 val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
 # Data loaders
-train_dataloader = DataLoader(train_dataset, batch_size=16, collate_fn=collate_fn, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=16,  collate_fn=collate_fn, shuffle=False)
-
 # Instantiate the model
-input_size = 20  # Update based on your input features
-hidden_size = 64
-output_size = 6  # Update based on your output features
-seq2seq_model = Seq2SeqModel(input_size, hidden_size, output_size)
+input_size = 3  # Update based on your input features
+hidden_size = 128
+output_size = 3 # Update based on your output features
+seq2seq_model = Seq2Seq_Baseline(input_size, hidden_size, output_size)
+learning_rate = 0.001
+batch_size = 32
+
+
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  collate_fn=collate_fn, shuffle=False)
+
 
 # Loss function and optimizer
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(seq2seq_model.parameters())
+optimizer = torch.optim.Adam(seq2seq_model.parameters(), lr=learning_rate)
+# check back if scheduler is needed
+# scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
 
 # 
 device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
-num_epochs = 10
+num_epochs = 20
 
-train_loss_list = []
-val_loss_list = []
-val_dice_list = []
-test_dice_list = []
 for epoch in range(num_epochs):
     total_train_loss = 0.0
     seq2seq_model.train()
@@ -93,11 +77,13 @@ for epoch in range(num_epochs):
         # Assuming decoder_input is the same as target for simplicity (modify as needed)
         optimizer.zero_grad()
         output = seq2seq_model(features, gaze_direction)
+        # output = seq2seq_model(gaze_direction)
+
         loss = criterion(output, gaze_direction)
         loss.backward()
         optimizer.step()
         total_train_loss += loss.item()
-        print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{i+1}/{len(train_dataloader)}], Training Loss: {loss.item()}')
+        # print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{i+1}/{len(train_dataloader)}], Training Loss: {loss.item()}')
     # Validation
     seq2seq_model.eval()
 
@@ -114,7 +100,8 @@ for epoch in range(num_epochs):
     average_val_loss = total_val_loss / len(val_dataloader)
 
     print(f'Epoch [{epoch+1}/{num_epochs}], Average Training Loss: {average_train_loss}, Average Validation Loss: {average_val_loss}')
+    # scheduler.step()
 
 # Save the model if needed
-torch.save(seq2seq_model.state_dict(), 'seq2seq_model.pth')
+torch.save(seq2seq_model.state_dict(), 'seq2seq_baseline.pth')
 

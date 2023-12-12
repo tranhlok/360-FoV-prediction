@@ -1,78 +1,24 @@
+'''
+seq2seq mlp mixing implementation
+'''
+
 import torch
 import torch.nn as nn
 import os
 import sys
-from torch_custom_dataset import GazeDataSet
+from torch_custom_dataset import GazeDataSet, GazeDataSet_OnlyHead
 # from data.torch_custom_dataset import GazeDataSet # for running in the main dir
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 import torch.nn.utils.rnn as rnn_utils
-
-# def collate_fn(batch):
-#     # batch is a list of (sequence, target, sequence_length) tuples
-#     sequences, targets, lengths = zip(*batch)
-
-#     # Sort batch by sequence length for pack_padded_sequence
-#     sorted_lengths, sorted_indices = torch.sort(torch.tensor(lengths), descending=True)
-#     sorted_sequences = [sequences[i] for i in sorted_indices]
-#     sorted_targets = [targets[i] for i in sorted_indices]
-
-#     # Pack sequences
-#     packed_sequences = rnn_utils.pack_sequence(sorted_sequences)
-
-#     return packed_sequences, torch.stack(sorted_targets), sorted_lengths
-
-# def collate_fn(batch):
-#     features, gaze_direction = zip(*batch)
-
-#     # Pad sequences to the length of the longest sequence in the batch
-#     padded_features = rnn_utils.pad_sequence(features, batch_first=True, padding_value=0)
-#     padded_gaze_direction = rnn_utils.pad_sequence(gaze_direction, batch_first=True, padding_value=0)
-
-#     return padded_features, padded_gaze_direction
+from collate import collate_fn
+from sklearn.model_selection import train_test_split
 
 
-# # Define the Seq2Seq model
-# class Seq2SeqModel(nn.Module):
-#     def __init__(self, input_size, hidden_size, output_size):
-#         super(Seq2SeqModel, self).__init__()
-
-#         # Encoder
-#         self.encoder_lstm = nn.LSTM(input_size, hidden_size)
-
-#         # Decoder
-#         self.decoder_lstm = nn.LSTM(output_size, hidden_size)
-#         self.decoder_dense = nn.Linear(hidden_size, output_size)
-
-#     def forward(self, encoder_input, decoder_input,encoder_lengths):
-#         # Encoder
-#         packed_encoder_input = rnn_utils.pack_padded_sequence(encoder_input,batch_first=True)
-
-#         _, (encoder_h, encoder_c) = self.encoder_lstm(packed_encoder_input)
-
-#         # Decoder
-#         decoder_output, _ = self.decoder_lstm(decoder_input, (encoder_h, encoder_c))
-#         decoder_output = self.decoder_dense(decoder_output)
-
-#         return decoder_output
-
-# class Seq2SeqModel(nn.Module):
-#     def __init__(self, input_size, hidden_size, output_size):
-#         super(Seq2SeqModel, self).__init__()
-#         self.encoder = nn.LSTM(input_size, hidden_size, batch_first=True)
-#         self.decoder = nn.LSTM(hidden_size, hidden_size, batch_first=True)
-#         self.fc = nn.Linear(hidden_size, output_size)
-
-#     def forward(self, encoder_input, decoder_input, encoder_lengths):
-#         _, (encoder_hidden, _) = self.encoder(encoder_input)
-#         decoder_output, _ = self.decoder(decoder_input, (encoder_hidden, _))
-#         output = self.fc(decoder_output)
-#         return output
-
-class Seq2SeqModel(nn.Module):
+class Seq2Seq_nlpmixing(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(Seq2SeqModel, self).__init__()
+        super(Seq2Seq_nlpmixing, self).__init__()
         self.encoder1 = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.encoder2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
         self.decoder_lstm1 = nn.LSTM(output_size, hidden_size, batch_first=True)
@@ -90,103 +36,77 @@ class Seq2SeqModel(nn.Module):
 
         return output
 
-def collate_fn(batch):
-    features, gaze_direction = zip(*batch)
-
-    # Pad sequences to the length of the longest sequence in the batch
-    padded_features = rnn_utils.pad_sequence(features, batch_first=True, padding_value=0)
-    padded_gaze_direction = rnn_utils.pad_sequence(gaze_direction, batch_first=True, padding_value=0)
-
-    return padded_features, padded_gaze_direction
-
-# Example usage:
-data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataSet(data_directory)
 
 # Split the dataset into training and validation sets
-train_size = int(0.8 * len(custom_dataset))
-test_size = len(custom_dataset) - train_size
-train_dataset, val_dataset = torch.utils.data.random_split(custom_dataset, [train_size, test_size])
+data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
+custom_dataset = GazeDataSet_OnlyHead(data_directory)
+print("Should be 95", len(custom_dataset))
 
-# DataLoader for batching
-batch_size = 16
-train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
-val_dataloader = DataLoader(dataset=val_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=False)
+train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.2, random_state=42)
+val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
+# Data loaders
+# Instantiate the model
+input_size = 3  # Update based on your input features
+hidden_size = 128
+output_size = 3 # Update based on your output features
+seq2seq_model = Seq2Seq_nlpmixing(input_size, hidden_size, output_size)
+learning_rate = 0.001
+batch_size = 32
 
-# Model and training loop
-input_size = 20  # Adjust based on your features dimension
-hidden_size = 256
-output_size = 6
 
-model = Seq2SeqModel(input_size, hidden_size, output_size)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  collate_fn=collate_fn, shuffle=False)
+
+
+# Loss function and optimizer
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.Adam(seq2seq_model.parameters(), lr=learning_rate)
+# check back if scheduler is needed
+# scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
 
-num_epochs = 10
+# 
+device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+seq2seq_model.to(device)
+
+# Training loop
+num_epochs = 20
+
 for epoch in range(num_epochs):
-    model.train()
-    for batch in train_dataloader:
-        encoder_input, target = batch
+    total_train_loss = 0.0
+    seq2seq_model.train()
 
+    for i, batch in enumerate(train_dataloader):
+        features, gaze_direction = batch
+        features, gaze_direction = features.to(device), gaze_direction.to(device)
         # Assuming decoder_input is the same as target for simplicity (modify as needed)
-        decoder_input = target
-
         optimizer.zero_grad()
-        output = model(encoder_input, decoder_input)
-        loss = criterion(output, target)
+        output = seq2seq_model(features, gaze_direction)
+        # output = seq2seq_model(gaze_direction)
+
+        loss = criterion(output, gaze_direction)
         loss.backward()
         optimizer.step()
-
-    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item()}')
-
+        total_train_loss += loss.item()
+        # print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{i+1}/{len(train_dataloader)}], Training Loss: {loss.item()}')
     # Validation
-    model.eval()
-    with torch.no_grad():
-        for batch in val_dataloader:
-            encoder_input, target = batch
-            decoder_input = target
-            output = model(encoder_input, decoder_input)
-            val_loss = criterion(output, target)
+    seq2seq_model.eval()
 
-    print(f'Validation Loss: {val_loss.item()}')
+    with torch.no_grad():
+        total_val_loss = 0.0
+        for batch in val_dataloader:
+            features, gaze_direction = batch
+            features, gaze_direction = features.to(device), gaze_direction.to(device)
+            decoder_input = gaze_direction
+            val_output = seq2seq_model(features, decoder_input)
+            total_val_loss += criterion(val_output, gaze_direction).item()
+
+    average_train_loss = total_train_loss / len(train_dataloader)
+    average_val_loss = total_val_loss / len(val_dataloader)
+
+    print(f'Epoch [{epoch+1}/{num_epochs}], Average Training Loss: {average_train_loss}, Average Validation Loss: {average_val_loss}')
+    # scheduler.step()
 
 # Save the model if needed
-torch.save(model.state_dict(), 'seq2seq_model.pth')
+torch.save(seq2seq_model.state_dict(), 'seq2seq_nlpmixing.pth')
 
-
-# # Example usage:
-# data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-# custom_dataset = GazeDataSet(data_directory)
-
-# input_size = 20  # Adjust based on your features dimension
-# hidden_size = 256
-# output_size = 6
-
-# model = Seq2SeqModel(input_size, hidden_size, output_size)
-# criterion = nn.MSELoss()
-# optimizer = torch.optim.Adam(model.parameters())
-
-# # DataLoader for batching
-# batch_size = 16  # Adjust based on your needs
-# dataloader = DataLoader(custom_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
-
-# # Training loop
-# num_epochs = 10
-# for epoch in range(num_epochs):
-#     for batch in dataloader:
-#         encoder_input, target = batch
-
-#         # Assuming decoder_input is the same as target for simplicity (modify as needed)
-#         decoder_input = target
-
-#         optimizer.zero_grad()
-#         output = model(encoder_input, decoder_input, None)  # No need for encoder_lengths in this example
-#         loss = criterion(output, target)
-#         loss.backward()
-#         optimizer.step()
-
-#     print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')
-
-# # Save the model if needed
-# torch.save(model.state_dict(), 'seq2seq_model.pth')
 
