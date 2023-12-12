@@ -46,7 +46,7 @@ sample_data, sample_gaze_direction = custom_dataset[sample_idx]
 
 # Print the features and gaze direction for the sample after handling missing values
 print("Features:")
-print(sample_data.shape)
+print(sample_data.shape)    
 
 print("\nGaze Direction:")
 print(sample_gaze_direction.shape)
