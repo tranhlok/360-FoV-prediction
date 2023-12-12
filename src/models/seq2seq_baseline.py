@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 import pandas as pd
 from collate import collate_fn
 from sklearn.model_selection import train_test_split
-from torch.optim.lr_scheduler import StepLR, EarlyStopping, ReduceLROnPlateau
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 from torch_custom_dataset import GazeDataSet_OnlyHead
 import matplotlib.pyplot as plt
 
@@ -88,10 +88,11 @@ optimizer = torch.optim.Adam(seq2seq_model.parameters(), lr=learning_rate)
 # scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
 
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=3, min_lr=1e-6, verbose=True)
-early_stopping = EarlyStopping(monitor="val_loss", patience=5)
 
 # Early stopping parameters
-
+early_stopping_patience = 10
+early_stopping_counter = 0
+best_val_loss = float('inf')
 
 device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 seq2seq_model.to(device)
@@ -140,11 +141,14 @@ for epoch in range(num_epochs):
     scheduler.step(average_val_loss)
 
     # Early stopping check
-    early_stopping.step(average_val_loss)
-
-    if early_stopping.early_stop:
-        print("Early stopping triggered at epoch", epoch)
-        break
+    if average_val_loss < best_val_loss:
+        best_val_loss = average_val_loss
+        early_stopping_counter = 0
+    else:
+        early_stopping_counter += 1
+        if early_stopping_counter >= early_stopping_patience:
+            print("Early stopping triggered.")
+            break
 
 # Save the model if needed
 torch.save(seq2seq_model.state_dict(), 'seq2seq_baseline.pth')
