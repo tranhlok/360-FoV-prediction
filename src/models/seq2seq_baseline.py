@@ -95,6 +95,9 @@ early_stopping_counter = 0
 best_val_loss = float('inf')
 
 device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
+# cuda
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
