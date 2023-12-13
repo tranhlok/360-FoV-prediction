@@ -12,27 +12,8 @@ import pandas as pd
 from collate import collate_fn
 from sklearn.model_selection import train_test_split
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
-from torch_custom_dataset import GazeDataSet_OnlyHead
+from torch_custom_dataset import GazeDataSet_OnlyHead, GazeDataSet_Experiment
 import matplotlib.pyplot as plt
-
-# # Define the PyTorch Seq2Seq model
-# class Seq2Seq_Baseline1(nn.Module):
-#     def __init__(self, input_size, hidden_size, output_size):
-#         super(Seq2Seq_Baseline, self).__init__()
-#         self.encoder = nn.LSTM(input_size, hidden_size, batch_first=True)
-#         self.decoder_lstm = nn.LSTM(output_size, hidden_size, batch_first=True)
-#         self.decoder_dense = nn.Linear(hidden_size, output_size)
-
-#     def forward(self, encoder_input, decoder_input):
-#         _, (encoder_hidden, encoder_cell) = self.encoder(encoder_input)
-
-#         # Use the last hidden and cell states of the encoder as initial states for the decoder
-#         decoder_outputs, _ = self.decoder_lstm(decoder_input, (encoder_hidden, encoder_cell))
-
-#         # Apply the dense layer to get the final output
-#         decoder_outputs = self.decoder_dense(decoder_outputs)
-
-#         return decoder_outputs
 
 
 class Seq2Seq_Baseline(nn.Module):
@@ -62,8 +43,8 @@ class Seq2Seq_Baseline(nn.Module):
 
 # Split the dataset into training and validation sets
 data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataSet_OnlyHead(data_directory)
-print("Should be 95", len(custom_dataset))
+custom_dataset = GazeDataSet_Experiment(data_directory)
+print("Length of dataset should be 95:", len(custom_dataset))
 
 train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.2, random_state=42)
 val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
@@ -90,7 +71,7 @@ optimizer = torch.optim.Adam(seq2seq_model.parameters(), lr=learning_rate)
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=3, min_lr=1e-6, verbose=True)
 
 # Early stopping parameters
-early_stopping_patience = 10
+early_stopping_patience = 5
 early_stopping_counter = 0
 best_val_loss = float('inf')
 
@@ -101,7 +82,7 @@ device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
-num_epochs = 200
+num_epochs = 100
 train_losses = []
 val_losses = []
 
@@ -157,8 +138,8 @@ for epoch in range(num_epochs):
 torch.save(seq2seq_model.state_dict(), 'seq2seq_baseline.pth')
 
 epochs_range = range(1, num_epochs + 1)
-plt.plot(epochs_range, train_losses, label='Training Loss')
-plt.plot(epochs_range, val_losses, label='Validation Loss')
+plt.plot( train_losses, label='Training Loss')
+plt.plot( val_losses, label='Validation Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
