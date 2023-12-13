@@ -89,7 +89,7 @@ class GazeDataSet_Experiment(Dataset):
 
         # Load the data from the text file with the correct delimiter
         data = pd.read_csv(file_path, delimiter=',')  # Assuming comma-separated values
-        data = data.ffill()
+        data = data.interpolate(method='linear', limit_direction='both')
 
         # Extract features and labels (assuming 'GazeDirection' is the column to predict)
         # features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns

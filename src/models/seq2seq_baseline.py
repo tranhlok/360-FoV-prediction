@@ -82,7 +82,7 @@ device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
-num_epochs = 100
+num_epochs = 50
 train_losses = []
 val_losses = []
 
@@ -138,8 +138,8 @@ for epoch in range(num_epochs):
 torch.save(seq2seq_model.state_dict(), 'seq2seq_baseline.pth')
 
 epochs_range = range(1, num_epochs + 1)
-plt.plot( train_losses, label='Training Loss')
-plt.plot( val_losses, label='Validation Loss')
+plt.plot(epochs_range, train_losses, label='Training Loss')
+plt.plot(epochs_range, val_losses, label='Validation Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
