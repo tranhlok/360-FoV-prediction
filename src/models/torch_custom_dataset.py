@@ -1,5 +1,7 @@
 '''
-Modify the dataset here if needed.
+Modify the datasets here if needed.
+All the dataset are here
+
 '''
 
 import torch
@@ -61,10 +63,10 @@ class GazeDataSet_OnlyHead(Dataset):
         data = pd.read_csv(file_path, delimiter=',')  # Assuming comma-separated values
 
         # Extract features and labels (assuming 'GazeDirection' is the column to predict)
-        # features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
-        features = data[['HeadX', 'HeadY', 'HeadZ','HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
+        features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values[::100]   # Exclude 'Timer' and gaze direction columns
+        # features = data[['HeadX', 'HeadY', 'HeadZ','HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
 
-        gaze_direction = data[['REyeRX', 'REyeRY', 'REyeRZ']].values
+        gaze_direction = data[['REyeRX', 'REyeRY', 'REyeRZ']].values[::100] 
 
         # Convert to PyTorch tensors
         features = torch.tensor(features, dtype=torch.float32)
@@ -93,9 +95,9 @@ class GazeDataSet_Experiment(Dataset):
 
         # Extract features and labels (assuming 'GazeDirection' is the column to predict)
         # features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
-        features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
+        features = data[['HeadX', 'HeadY', 'HeadZ']].values[::100] # Exclude 'Timer' and gaze direction columns
 
-        gaze_direction = data[['REyeRX', 'REyeRY', 'REyeRZ']].values
+        gaze_direction = data[['REyeRX', 'REyeRY', 'REyeRZ']].values[::100] 
 
         # Convert to PyTorch tensors
         normalized_features = self.min_max_scaler_features.fit_transform(features)
@@ -107,3 +109,35 @@ class GazeDataSet_Experiment(Dataset):
 
 
         return features, gaze_direction
+    
+class OneViewDataset(Dataset):
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+        self.data = pd.read_csv(self.data_dir, delimiter=',')  # Assuming comma-separated values
+
+        self.min_max_scaler_features = preprocessing.MinMaxScaler()
+        self.min_max_scaler_gaze = preprocessing.MinMaxScaler()
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        # Load the data from the text file with the correct delimiter
+        self.data = self.data.interpolate(method='linear', limit_direction='both')
+
+        # Extract features and labels (assuming 'GazeDirection' is the column to predict)
+        # features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
+        features = self.data[['HeadX', 'HeadY', 'HeadZ']].values # Exclude 'Timer' and gaze direction columns
+
+        gaze_direction = self.data[['REyeRX', 'REyeRY', 'REyeRZ']].values
+
+        # Convert to PyTorch tensors
+        normalized_features = self.min_max_scaler_features.fit_transform(features)
+        normalized_gaze_direction = self.min_max_scaler_gaze.fit_transform(gaze_direction)
+
+        # Convert to PyTorch tensors
+        features = torch.tensor(normalized_features, dtype=torch.float32)
+        gaze_direction = torch.tensor(normalized_gaze_direction, dtype=torch.float32)
+
+
+        return features[idx], gaze_direction[idx]
