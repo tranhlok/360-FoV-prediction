@@ -1,8 +1,10 @@
-'''
-The baseline seq2seq model, make adjustment to the 
-custom dataset in torch_cutom_dataset.py
-collate_fn can be found in collate.py
-'''
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Dec 16 22:26:10 2023
+
+@author: taishanzhao
+"""
 
 import os
 import torch
@@ -12,7 +14,7 @@ import pandas as pd
 from collate import collate_fn
 from sklearn.model_selection import train_test_split
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
-from torch_custom_dataset import GazeDataSet_OnlyHead, GazeDataSet_Experiment
+from torch_custom_dataset import GazeDataSet_Interview
 import matplotlib.pyplot as plt
 
 
@@ -42,9 +44,10 @@ class Seq2Seq_Baseline(nn.Module):
         return output
 
 # Split the dataset into training and validation sets
-data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataSet_Experiment(data_directory)
-print("Length of dataset should be 95:", len(custom_dataset))
+data_directory = os.path.expanduser("~/Desktop/Image_Processing/360-FoV-prediction/data/processed")
+custom_dataset = GazeDataSet_Interview(data_directory)
+print("Should be 95", len(custom_dataset))
+print(custom_dataset.file_list)
 
 train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.2, random_state=42)
 val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
@@ -75,14 +78,14 @@ early_stopping_patience = 5
 early_stopping_counter = 0
 best_val_loss = float('inf')
 
-device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.device_count() > 0 else 'cpu')
 
 # cuda
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
-num_epochs = 50
+num_epochs = 10
 train_losses = []
 val_losses = []
 
@@ -123,7 +126,7 @@ for epoch in range(num_epochs):
     print(f'Epoch [{epoch+1}/{num_epochs}], Average Training Loss: {average_train_loss}, Average Validation Loss: {average_val_loss}')
     # scheduler.step()
     scheduler.step(average_val_loss)
-
+'''
     # Early stopping check
     if average_val_loss < best_val_loss:
         best_val_loss = average_val_loss
@@ -133,7 +136,7 @@ for epoch in range(num_epochs):
         if early_stopping_counter >= early_stopping_patience:
             print("Early stopping triggered.")
             break
-
+'''
 # Save the model if needed
 torch.save(seq2seq_model.state_dict(), 'seq2seq_baseline.pth')
 

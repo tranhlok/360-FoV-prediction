@@ -1,61 +1,66 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Dec 16 20:50:33 2023
+
+@author: taishanzhao
+"""
+
 '''
-The baseline seq2seq model, make adjustment to the 
-custom dataset in torch_cutom_dataset.py
-collate_fn can be found in collate.py
+seq2seq mlp mixing implementation
 '''
 
+import torch
+import torch.nn as nn
 import os
+import sys
+from torch_custom_dataset import GazeDataSet_Interview
+# from data.torch_custom_dataset import GazeDataSet # for running in the main dir
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import pandas as pd
+import torch.nn.utils.rnn as rnn_utils
 from collate import collate_fn
 from sklearn.model_selection import train_test_split
-from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
-from torch_custom_dataset import GazeDataSet_OnlyHead, GazeDataSet_Experiment
 import matplotlib.pyplot as plt
 
 
-class Seq2Seq_Baseline(nn.Module):
+class Seq2Seq_nlpmixing(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(Seq2Seq_Baseline, self).__init__()
+        super(Seq2Seq_nlpmixing, self).__init__()
+        self.encoder1 = nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.encoder2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+        self.decoder_lstm1 = nn.LSTM(output_size, hidden_size, batch_first=True)
+        self.decoder_lstm2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+        self.decoder_dense = nn.Linear(hidden_size, output_size)
 
-        # Encoder
-        self.encoder = nn.LSTM(input_size, hidden_size)
+    def forward(self, encoder_input, decoder_input, encoder_lengths=None):
+        encoder1_outputs, _ = self.encoder1(encoder_input)
+        encoder2_outputs, _ = self.encoder2(encoder1_outputs)
 
-        # Decoder
-        self.decoder = nn.LSTM(output_size, hidden_size)
+        decoder1_outputs, _ = self.decoder_lstm1(decoder_input)
+        decoder2_outputs, _ = self.decoder_lstm2(decoder1_outputs)
 
-        # Output layer
-        self.linear = nn.Linear(hidden_size, output_size)
-
-    def forward(self, encoder_input, decoder_input):
-        # Encoder forward pass
-        _, (encoder_hidden, encoder_cell) = self.encoder(encoder_input)
-
-        # Decoder forward pass
-        decoder_output, _ = self.decoder(decoder_input, (encoder_hidden, encoder_cell))
-
-        # Linear layer to get the output
-        output = self.linear(decoder_output)
+        output = self.decoder_dense(decoder2_outputs)
 
         return output
 
+
 # Split the dataset into training and validation sets
-data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataSet_Experiment(data_directory)
-print("Length of dataset should be 95:", len(custom_dataset))
+data_directory = os.path.expanduser("~/Desktop/Image_Processing/360-FoV-prediction/data/processed")
+custom_dataset = GazeDataSet_Interview(data_directory)
+print("Should be 95", len(custom_dataset))
+print(custom_dataset.file_list)
 
 train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.2, random_state=42)
 val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
-# Data loaders
-# Instantiate the model
+
 input_size = 3  # Update based on your input features
-hidden_size = 64
+hidden_size = 128
 output_size = 3 # Update based on your output features
-seq2seq_model = Seq2Seq_Baseline(input_size, hidden_size, output_size) 
+seq2seq_model = Seq2Seq_nlpmixing(input_size, hidden_size, output_size)
 learning_rate = 0.001
-batch_size = 32
+batch_size = 40
 
 
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
@@ -68,24 +73,14 @@ optimizer = torch.optim.Adam(seq2seq_model.parameters(), lr=learning_rate)
 # check back if scheduler is needed
 # scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
 
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=3, min_lr=1e-6, verbose=True)
-
-# Early stopping parameters
-early_stopping_patience = 5
-early_stopping_counter = 0
-best_val_loss = float('inf')
-
-device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-
-# cuda
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# 
+device = torch.device('cuda' if torch.cuda.device_count() > 0 else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
-num_epochs = 50
+num_epochs = 40
 train_losses = []
 val_losses = []
-
 for epoch in range(num_epochs):
     total_train_loss = 0.0
     seq2seq_model.train()
@@ -122,21 +117,9 @@ for epoch in range(num_epochs):
 
     print(f'Epoch [{epoch+1}/{num_epochs}], Average Training Loss: {average_train_loss}, Average Validation Loss: {average_val_loss}')
     # scheduler.step()
-    scheduler.step(average_val_loss)
-
-    # Early stopping check
-    if average_val_loss < best_val_loss:
-        best_val_loss = average_val_loss
-        early_stopping_counter = 0
-    else:
-        early_stopping_counter += 1
-        if early_stopping_counter >= early_stopping_patience:
-            print("Early stopping triggered.")
-            break
 
 # Save the model if needed
-torch.save(seq2seq_model.state_dict(), 'seq2seq_baseline.pth')
-
+torch.save(seq2seq_model.state_dict(), 'seq2seq_mlpmixing_test.pth')
 epochs_range = range(1, num_epochs + 1)
 plt.plot(epochs_range, train_losses, label='Training Loss')
 plt.plot(epochs_range, val_losses, label='Validation Loss')
