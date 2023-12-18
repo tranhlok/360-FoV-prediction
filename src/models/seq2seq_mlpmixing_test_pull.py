@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Dec 16 20:50:33 2023
+Created on Sun Dec 17 23:10:57 2023
 
 @author: taishanzhao
 """
-
-'''
-seq2seq mlp mixing implementation
-'''
 
 import torch
 import torch.nn as nn
 import os
 import sys
-from torch_custom_dataset import GazeDataSet_Interview
+from torch_custom_dataset import GazeDataSet_Movement
 # from data.torch_custom_dataset import GazeDataSet # for running in the main dir
 import torch
 import torch.nn as nn
@@ -23,6 +19,7 @@ import torch.nn.utils.rnn as rnn_utils
 from collate import collate_fn
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
 
 class Seq2Seq_nlpmixing(nn.Module):
@@ -48,7 +45,7 @@ class Seq2Seq_nlpmixing(nn.Module):
 
 # Split the dataset into training and validation sets
 data_directory = os.path.expanduser("~/Desktop/Image_Processing/360-FoV-prediction/data/processed")
-custom_dataset = GazeDataSet_Interview(data_directory)
+custom_dataset = GazeDataSet_Movement(data_directory, 'Pulling')
 print("Should be 95", len(custom_dataset))
 print(custom_dataset.file_list)
 
@@ -60,7 +57,7 @@ hidden_size = 128
 output_size = 3 # Update based on your output features
 seq2seq_model = Seq2Seq_nlpmixing(input_size, hidden_size, output_size)
 learning_rate = 0.001
-batch_size = 40
+batch_size = 32
 
 
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
@@ -71,14 +68,14 @@ val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  collate_fn=coll
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(seq2seq_model.parameters(), lr=learning_rate)
 # check back if scheduler is needed
-# scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
-
+#scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3, min_lr=1e-6, verbose=True)
 # 
 device = torch.device('cuda' if torch.cuda.device_count() > 0 else 'cpu')
 seq2seq_model.to(device)
 
 # Training loop
-num_epochs = 40
+num_epochs = 100
 train_losses = []
 val_losses = []
 for epoch in range(num_epochs):
@@ -116,7 +113,7 @@ for epoch in range(num_epochs):
     val_losses.append(average_val_loss)
 
     print(f'Epoch [{epoch+1}/{num_epochs}], Average Training Loss: {average_train_loss}, Average Validation Loss: {average_val_loss}')
-    # scheduler.step()
+    scheduler.step(average_val_loss)
 
 # Save the model if needed
 torch.save(seq2seq_model.state_dict(), 'seq2seq_mlpmixing_test.pth')
@@ -125,5 +122,6 @@ plt.plot(epochs_range, train_losses, label='Training Loss')
 plt.plot(epochs_range, val_losses, label='Validation Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
+plt.title('seq2seq + MLP mixing: Pulling Trolley')
 plt.legend()
 plt.show()

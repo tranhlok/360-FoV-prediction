@@ -142,10 +142,12 @@ class OneViewDataset(Dataset):
 
         return features[idx], gaze_direction[idx]
 
-class GazeDataSet_Interview(Dataset):
-    def __init__(self, data_dir):
+   
+    
+class GazeDataSet_Movement(Dataset):
+    def __init__(self, data_dir, mov):
         self.data_dir = data_dir
-        self.file_list = [file for file in os.listdir(data_dir) if (file.endswith('.csv') and ('interviewing' in file))]
+        self.file_list = [file for file in os.listdir(data_dir) if (file.endswith('.csv') and (mov in file))]
         self.min_max_scaler_features = preprocessing.MinMaxScaler()
         self.min_max_scaler_gaze = preprocessing.MinMaxScaler()
 
@@ -175,5 +177,4 @@ class GazeDataSet_Interview(Dataset):
         gaze_direction = torch.tensor(normalized_gaze_direction, dtype=torch.float32)
 
 
-        return features, gaze_direction
-    
+        return features, gaze_direction    
