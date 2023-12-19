@@ -57,7 +57,6 @@ seq2seq_model = Seq2Seq_Baseline(input_size, hidden_size, output_size)
 learning_rate = 0.001
 batch_size = 32
 
-
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  collate_fn=collate_fn, shuffle=False)
 

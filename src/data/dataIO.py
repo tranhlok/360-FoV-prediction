@@ -59,7 +59,7 @@ def split_act(directory,act_dir, activities):
             # Move the file to the appropriate folder
             shutil.copy(os.path.join(directory, filename), os.path.join(activity_folder, filename))
 
-    print("Files have been sorted into folders based on activities.")
+    print("Files have been sorted into folders based on activities. The above are the filtered ones which are not in the testing sample")
 
 
 # Set the directory where your CSV files are stored
@@ -70,5 +70,6 @@ act_dir = os.path.expanduser("~/360-FoV-prediction/data/processed_by_activity")
 activities = ["chatting", "cleaning_whiteboard", "news_interviewing", "pulling_trolley", "presenting", "sweep"]
 
 convert_text_to_csv(raw_dir, processed_dir)
+
 split_act(processed_dir, act_dir, activities)
-print("FINISHED, PROCEED TO TRAIN MODEL.")
+print("Data processing finished, proceed to train model.")

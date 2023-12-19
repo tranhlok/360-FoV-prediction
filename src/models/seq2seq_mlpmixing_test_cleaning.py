@@ -20,44 +20,109 @@ from collate import collate_fn
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+import random 
 
+# class Seq2Seq_nlpmixing(nn.Module):
+#     def __init__(self, input_size, hidden_size, output_size):
+#         super(Seq2Seq_nlpmixing, self).__init__()
+#         self.encoder1 = nn.LSTM(input_size, hidden_size, batch_first=True)
+#         self.encoder2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+#         self.decoder_lstm1 = nn.LSTM(output_size, hidden_size, batch_first=True)
+#         self.decoder_lstm2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+#         self.decoder_dense = nn.Linear(hidden_size, output_size)
+
+#     def forward(self, encoder_input, decoder_input, encoder_lengths=None):
+#         encoder1_outputs, _ = self.encoder1(encoder_input)
+#         encoder2_outputs, _ = self.encoder2(encoder1_outputs)
+
+#         decoder1_outputs, _ = self.decoder_lstm1(decoder_input)
+#         decoder2_outputs, _ = self.decoder_lstm2(decoder1_outputs)
+
+#         output = self.decoder_dense(decoder2_outputs)
+
+#         return output
+
+class Encoder(nn.Module):
+    def __init__(self, input_dim, latent_dim):
+        super(Encoder, self).__init__()
+        self.latent_dim = latent_dim // 2
+        self.lstm1 = nn.LSTM(input_dim, self.latent_dim, batch_first=True)
+        self.lstm2 = nn.LSTM(self.latent_dim, self.latent_dim, batch_first=True)
+
+    def forward(self, src):
+        outputs, (hidden, cell) = self.lstm1(src)
+        outputs, (hidden, cell) = self.lstm2(outputs)
+        return hidden, cell
+
+class Decoder(nn.Module):
+    def __init__(self, output_dim, latent_dim):
+        super(Decoder, self).__init__()
+        self.latent_dim = latent_dim // 2
+        self.lstm1 = nn.LSTM(output_dim, self.latent_dim, batch_first=True)
+        self.lstm2 = nn.LSTM(self.latent_dim, self.latent_dim, batch_first=True)
+        self.fc_out = nn.Linear(self.latent_dim, output_dim)
+
+    def forward(self, trg, hidden, cell):
+        trg = trg
+        output, (hidden, cell) = self.lstm1(trg, (hidden, cell))
+        output, (hidden, cell) = self.lstm2(output, (hidden, cell))
+        prediction = self.fc_out(output)
+        return prediction, hidden, cell
 
 class Seq2Seq_nlpmixing(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, encoder, decoder, device):
         super(Seq2Seq_nlpmixing, self).__init__()
-        self.encoder1 = nn.LSTM(input_size, hidden_size, batch_first=True)
-        self.encoder2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
-        self.decoder_lstm1 = nn.LSTM(output_size, hidden_size, batch_first=True)
-        self.decoder_lstm2 = nn.LSTM(hidden_size, hidden_size, batch_first=True)
-        self.decoder_dense = nn.Linear(hidden_size, output_size)
+        self.encoder = encoder
+        self.decoder = decoder
+        self.device = device
 
-    def forward(self, encoder_input, decoder_input, encoder_lengths=None):
-        encoder1_outputs, _ = self.encoder1(encoder_input)
-        encoder2_outputs, _ = self.encoder2(encoder1_outputs)
+    def forward(self, src, trg, teacher_forcing_ratio = 0.5):
+        batch_size = trg.shape[0]
+        trg_len = trg.shape[1]
+        trg_vocab_size = self.decoder.fc_out.out_features
 
-        decoder1_outputs, _ = self.decoder_lstm1(decoder_input)
-        decoder2_outputs, _ = self.decoder_lstm2(decoder1_outputs)
+        outputs = torch.zeros(batch_size, trg_len, trg_vocab_size).to(self.device)
+        hidden, cell = self.encoder(src)
 
-        output = self.decoder_dense(decoder2_outputs)
+        input = trg[:, 0, :]
+        for t in range(1, trg_len):
+            output, hidden, cell = self.decoder(input, hidden, cell)
+            outputs[:,t,:] = output
+            top1 = output.argmax(1)
+            input = trg[:, t, :] if random.random() < teacher_forcing_ratio else top1
 
-        return output
+        return outputs
 
 
 # Split the dataset into training and validation sets
-data_directory = os.path.expanduser("~/Desktop/Image_Processing/360-FoV-prediction/data/processed")
+# data_directory = os.path.expanduser("~/Desktop/Image_Processing/360-FoV-prediction/data/processed")
+data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed")
+
 custom_dataset = GazeDataSet_Movement(data_directory,'cleaning')
 print("Should be 95", len(custom_dataset))
 print(custom_dataset.file_list)
 
 train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.2, random_state=42)
-#val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
+val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
 
-input_size = 3  # Update based on your input features
-hidden_size = 128
-output_size = 3 # Update based on your output features
-seq2seq_model = Seq2Seq_nlpmixing(input_size, hidden_size, output_size)
-learning_rate = 0.005
-batch_size = 50
+# input_size = 3  # Update based on your input features
+# hidden_size = 128
+# output_size = 3 # Update based on your output features
+# seq2seq_model = Seq2Seq_nlpmixing(input_size, hidden_size, output_size)
+# learning_rate = 0.005
+# batch_size = 50
+learning_rate = 0.0001
+batch_size = 32
+INPUT_DIM = 3
+OUTPUT_DIM = 3
+LATENT_DIM = 128
+TEACHER_FORCING_RATIO = 0.5
+
+# Instantiate the model
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+encoder = Encoder(INPUT_DIM, LATENT_DIM)
+decoder = Decoder(OUTPUT_DIM, LATENT_DIM)
+seq2seq_model = Seq2Seq_nlpmixing(encoder, decoder, device).to(device)
 
 
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
