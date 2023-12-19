@@ -39,30 +39,6 @@ class HeadToGazeDataset(Dataset):
         return input_seq, target_seq
     
 
-    # class Seq2Seq_Baseline(nn.Module):
-#     def __init__(self, input_size, hidden_size, output_size):
-#         super(Seq2Seq_Baseline, self).__init__()
-
-#         # Encoder
-#         self.encoder = nn.LSTM(input_size, hidden_size,dropout=0.5)
-
-#         # Decoder
-#         self.decoder = nn.LSTM(output_size, hidden_size,dropout=0.5)
-
-#         # Output layer
-#         self.linear = nn.Linear(hidden_size, output_size)
-
-#     def forward(self, encoder_input, decoder_input):
-#         # Encoder forward pass
-#         _, (encoder_hidden, encoder_cell) = self.encoder(encoder_input)
-
-#         # Decoder forward pass
-#         decoder_output, _ = self.decoder(decoder_input, (encoder_hidden, encoder_cell))
-
-#         # Linear layer to get the output
-#         output = self.linear(decoder_output)
-
-#         return output
 class Seq2Seq_Baseline(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(Seq2Seq_Baseline, self).__init__()
@@ -87,10 +63,12 @@ class Seq2Seq_Baseline(nn.Module):
         output = self.linear(decoder_output)
 
         return output
+    
 # Split the dataset into training and validation sets
 data_directory = os.path.expanduser("~/360-FoV-prediction/data/processed/yuchen_presenting.csv")
 # custom_dataset = GazeDirectionDataset(data_directory)
 custom_dataset = HeadToGazeDataset(data_directory)
+print("===========================dataset length===========================", len(custom_dataset))
 
 train_dataset, val_dataset = train_test_split(custom_dataset, test_size=0.3, random_state=42, shuffle=True)
 val_dataset, test_dataset = train_test_split(val_dataset, test_size=0.5, random_state=42)
@@ -190,3 +168,4 @@ plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
 plt.show()
+
