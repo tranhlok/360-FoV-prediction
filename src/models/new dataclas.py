@@ -20,15 +20,21 @@ def normalize_data(data):
 
 
 class GazeDirectionDataset(Dataset):
-    def __init__(self, csv_file, sequence_length=10):
-        self.csv_file = csv_file
+    def __init__(self, folder_path, sequence_length=5):
         self.sequence_length = sequence_length
+        self.data = []
 
-        data = pd.read_csv(self.csv_file)
-        gaze_data = data[['REyeRX', 'REyeRY', 'REyeRZ']].values
+        # Load and aggregate data from all CSV files in the folder
+        for filename in os.listdir(folder_path):
+            if filename.endswith('.csv'):
+                file_path = os.path.join(folder_path, filename)
+                data = pd.read_csv(file_path)
+                gaze_data = data[['REyeRX', 'REyeRY', 'REyeRZ']].values
+                self.data.append(gaze_data)
 
-        # Normalize the data
-        self.normalized_gaze_data, self.scaler = normalize_data(gaze_data)
+        # Concatenate and normalize the data
+        all_data = np.concatenate(self.data, axis=0)
+        self.normalized_gaze_data, self.scaler = normalize_data(all_data)
 
     def __len__(self):
         return len(self.normalized_gaze_data) - self.sequence_length - 1
