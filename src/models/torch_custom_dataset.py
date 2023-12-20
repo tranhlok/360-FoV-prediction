@@ -178,3 +178,38 @@ class GazeDataSet_Movement(Dataset):
 
 
         return features, gaze_direction    
+    
+class GazeDataSet_Past_Future(Dataset):
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+        self.file_list = [file for file in os.listdir(data_dir) if (file.endswith('.csv'))]
+        self.min_max_scaler_features = preprocessing.MinMaxScaler()
+        self.min_max_scaler_gaze = preprocessing.MinMaxScaler()
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, idx):
+        file_name = self.file_list[idx]
+        file_path = os.path.join(self.data_dir, file_name)
+
+        # Load the data from the text file with the correct delimiter
+        data = pd.read_csv(file_path, delimiter=',')  # Assuming comma-separated values
+        data = data.interpolate(method='linear', limit_direction='both')
+
+        # Extract features and labels (assuming 'GazeDirection' is the column to predict)
+        # features = data[['HeadRX', 'HeadRY', 'HeadRZ']].values  # Exclude 'Timer' and gaze direction columns
+        past_direction = data[['HeadX', 'HeadY', 'HeadZ']].values[::51] # Exclude 'Timer' and gaze direction columns
+
+        future_direction = data[['HeadX', 'HeadY', 'HeadZ']].values[51::] 
+
+        # Convert to PyTorch tensors
+        normalized_features = self.min_max_scaler_features.fit_transform(past_direction)
+        normalized_gaze_direction = self.min_max_scaler_gaze.fit_transform(future_direction)
+
+        # Convert to PyTorch tensors
+        input_features = torch.tensor(normalized_features, dtype=torch.float32)
+        target = torch.tensor(normalized_gaze_direction, dtype=torch.float32)
+
+
+        return input_features, target   
