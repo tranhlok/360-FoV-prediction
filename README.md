@@ -5,20 +5,23 @@ This project aims to explore, adapt, and develop a predictive system for anticip
 
 Dataset
 ------------
-Create your own data folder (data folder is not included by default) 
-
-Create a data structure for the data folder as shown
-
-    ├── data
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump
-
-    
 Link to the dataset: https://cuhksz-inml.github.io/user-behavior-in-vv-watching/
 
 Google drive link to directly download the dataset: https://drive.google.com/drive/folders/10IneAJ6uMoI_BI93tuKj5_Oxj9qbkM29
 
-Please download the dataset and put it into the /data/raw folder. The dataset contains 100 text files, please double check.
+    ├── data
+    │   ├── processed_by_activity <- The data set for divided by activities
+    │   ├── processed      <- The final, canonical data sets for modeling.
+    │   └── raw            <- The original, immutable data dump
+
+Please download the dataset and put it into the /data/raw folder. The dataset contains 100 text files.
+
+Run the data pre precessing scripts located in src/data. The created dataset structure will be located in the data folder as the following:
+
+    ├── data
+    │   ├── processed_by_activity <- The data set for divided by activities
+    │   ├── processed      <- The final data
+    │   └── raw            <- The original data
 
 Project Organization
 ------------
@@ -36,9 +39,9 @@ Project Organization
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
     │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    │                         `1.0-jqp-initial-data-exploration`.   
     │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+    ├── references         <- Referenced papers, others paper that we have came by.
     │
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
     │   └── figures        <- Generated graphics and figures to be used in reporting
