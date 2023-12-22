@@ -9,11 +9,6 @@ Link to the dataset: https://cuhksz-inml.github.io/user-behavior-in-vv-watching/
 
 Google drive link to directly download the dataset: https://drive.google.com/drive/folders/10IneAJ6uMoI_BI93tuKj5_Oxj9qbkM29
 
-    ├── data
-    │   ├── processed_by_activity <- The data set for divided by activities
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump
-
 Please download the dataset and put it into the /data/raw folder. The dataset contains 100 text files.
 
 Run the data pre precessing scripts located in src/data. The created dataset structure will be located in the data folder as the following:
