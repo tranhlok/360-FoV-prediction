@@ -1,7 +1,12 @@
 360-FoV-prediction
 ==============================
-*** ON GOING PROJECT, CODEBASE WILL BE UPDATE LATER SINCE WE CONDUCT OUR TRAINING ON GOOGLE COLAB
-This project aims to explore, adapt, and develop a predictive system for anticipating viewers' gaze directions within immersive 360 degree images and videos by analyzing the past view direction.
+Abstract
+------------
+Abstract—This project aims to explore, adapt, and develop a predictive system for anticipating viewers’ gaze directions within immersive images and videos by analyzing the past view direction and, when applicable, the content of the video itself. Additionally, we focus on enhancing the user experience in point cloud video, where six degree-of-freedom is available for viewing volumetric data. By adapting the existing recurrent neural network (RNN) and transformer approach for three degree-of-freedom field-of-view prediction to a new dataset  and exploring potential methodological improvements, our project seeks to improve the immersive quality and engagement of virtual experiences, achieve field-of-view prediction within six degree-of-freedom, with potential applications in fields such as virtual reality gaming, virtual reality live streaming, and educational simulations. The source code implemented in this project can be accessed here. 
+
+Index
+------------
+Terms—point cloud video, image processing, computer vision, field of view
 
 Dataset
 ------------
