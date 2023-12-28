@@ -53,7 +53,7 @@ class GazeDirectionDataset(Dataset):
 
     def __getitem__(self, idx):
         input_seq = self.normalized_gaze_data[idx:idx + self.sequence_length]
-        target_seq = self.normalized_gaze_data[idx + 1:idx + self.sequence_length + 1]
+        target_seq = self.normalized_gaze_data[idx + self.sequence_length : idx + self.sequence_length + self.sequence_length]
 
         input_seq = torch.tensor(input_seq, dtype=torch.float32)
         target_seq = torch.tensor(target_seq, dtype=torch.float32)
@@ -80,26 +80,26 @@ class TransformerModel(nn.Module):
 
 # Parameters
 input_dim = 6  # As we have 3 features (REyeRX, REyeRY, REyeRZ)
-sequence_length = 5
+sequence_length = 30
 num_layers = 2
 num_heads = 6
 dim_feedforward = 512
-batch_size = 32
-epochs = 10
+batch_size = 16
+epochs = 30
 
 # Load dataset
-dataset = GazeDirectionDataset("~/Desktop/Image_Processing/360-FoV-prediction/data/processed", sequence_length=sequence_length)
+dataset = GazeDirectionDataset("/Users/taishanzhao/Desktop/Image_Processing/360-FoV-prediction/data/processed_by_activity/chatting", sequence_length=sequence_length)
 
 train_dataset, val_dataset = train_test_split(dataset, test_size=0.2, random_state=42)
 val_dataset, test_dataset = train_test_split(dataset, test_size=0.5, random_state=42)
 
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  collate_fn=collate_fn, shuffle=False)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  collate_fn=collate_fn, shuffle=True)
 
 # Initialize model
 model = TransformerModel(input_dim, num_layers, num_heads, dim_feedforward)
 loss_function = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -138,3 +138,11 @@ for epoch in range(epochs):
 
 # Save the model
 torch.save(model.state_dict(), 'transformer_model.pth')
+epochs_range = range(1, epochs + 1)
+plt.plot(epochs_range, train_losses, label='Training Loss')
+plt.plot(epochs_range, val_losses, label='Validation Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Transformer: Sweep')
+plt.legend()
+plt.show()
