@@ -22,7 +22,7 @@
     351.801331  35.403572 -1.050679e-07
     ...
 
-Mean Squared Error (MSE) for each data point:
+Mean Squared Error (MSE) for center:
 5     0.770016
 6     0.943748
 7     0.673714
